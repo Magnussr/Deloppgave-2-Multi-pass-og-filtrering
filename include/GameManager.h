@@ -99,7 +99,7 @@ private:
 	GLuint vaos[max_vaos]; //< Vertex array object
 	std::shared_ptr<GLUtils::BO<GL_ARRAY_BUFFER> > vertices;
 	std::shared_ptr<GLUtils::BO<GL_ELEMENT_ARRAY_BUFFER> > indices;
-	std::shared_ptr<GLUtils::Program> phong_program, bloom_program, horizontal_blur_program, vertical_blur_program;
+	std::shared_ptr<GLUtils::Program> phong_program, passthrough_program, horizontal_blur_program, vertical_blur_program;
 
 	std::shared_ptr<Model> model;
 	//Fbos for rendering

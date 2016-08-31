@@ -107,7 +107,7 @@ void GameManager::createMatrices() {
 void GameManager::createSimpleProgram() {
 	//Compile shaders, attach to program object, and link
 	phong_program.reset(new Program("shaders/phong_os.vert", "shaders/phong_os.frag"));
-	bloom_program.reset(new Program("shaders/bloom.vert", "shaders/bloom.frag"));
+	passthrough_program.reset(new Program("shaders/passthrough.vert", "shaders/passthrough.frag"));
 	horizontal_blur_program.reset(new Program("shaders/passthrough.vert","shaders/horizontal_blur.frag"));
 	vertical_blur_program.reset(new Program("shaders/passthrough.vert","shaders/vertical_blur.frag"));
 	CHECK_GL_ERRORS();
@@ -118,8 +118,8 @@ void GameManager::createSimpleProgram() {
 	phong_program->disuse();
 	CHECK_GL_ERRORS();
 	
-	bloom_program->use();
-	glUniform1i(bloom_program->getUniform("my_texture"), 0);
+	passthrough_program->use();
+	glUniform1i(passthrough_program->getUniform("my_texture"), 0);
 
 	horizontal_blur_program->use();
 	glUniform1i(horizontal_blur_program->getUniform("my_texture"), 0);
@@ -152,7 +152,7 @@ void GameManager::createVAO() {
 	vertices.reset(new BO<GL_ARRAY_BUFFER>(quad_vertices, sizeof(quad_vertices)));
 	indices.reset(new BO<GL_ELEMENT_ARRAY_BUFFER>(quad_indices, sizeof(quad_indices)));
 	vertices->bind();
-	bloom_program->setAttributePointer("position", 2);
+	passthrough_program->setAttributePointer("position", 2);
 	indices->bind();
 	CHECK_GL_ERRORS();
 
@@ -285,7 +285,7 @@ void GameManager::render() {
 	glViewport(0, 0, window_width, window_height);
 
 	//Render quad to screen, textured with the result of the blur operation
-	bloom_program->use();
+	passthrough_program->use();
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, fbo1->getTexture());
 	glBindVertexArray(vaos[1]);

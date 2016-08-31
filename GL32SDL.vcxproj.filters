@@ -70,12 +70,6 @@
     <None Include="shaders\phong_os.frag">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="shaders\bloom.vert">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="shaders\bloom.frag">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="shaders\passthrough.vert">
       <Filter>Resource Files</Filter>
     </None>
@@ -83,6 +77,9 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="shaders\vertical_blur.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="shaders\passthrough.frag">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
