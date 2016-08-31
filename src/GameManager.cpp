@@ -38,6 +38,7 @@ unsigned int GameManager::downscale_level = 4;
 GameManager::GameManager() {
 	my_timer.restart();
 	
+	//Setts the render mode to standar phong shading 
 	filterMode = RenderMode::STANDARD;
 
 }
@@ -165,6 +166,7 @@ void GameManager::createVAO() {
 
 void GameManager::createFBO() {
 	
+	//Create two FBO for multipass rendering
 	fbo1.reset(new TextureFBO(window_width, window_height));
 	fbo1->unbind();
 
@@ -223,49 +225,14 @@ void GameManager::render() {
 	fbo1->unbind();
 	CHECK_GL_ERRORS();
 
-	switch (filterMode)
-	{
-	case RenderMode::STANDARD: {
+	//Switch for the different filters 
+	switch (filterMode){
 
-	}
-							   break;
-	case RenderMode::BLUR: {
-
-
-		//Generate mipmaps
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, fbo1->getTexture());
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-
-		//blur vertically
-		fbo2->bind();
-		glDepthMask(GL_FALSE);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, fbo1->getTexture());
-		glViewport(0, 0, fbo2->getWidth(), fbo2->getHeight());
-		vertical_blur_program->use();
-		glBindVertexArray(vaos[1]);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
-		glDepthMask(GL_TRUE);
-		fbo2->unbind();
-
-		//blur horizontally
-		fbo1->bind();
-		glDepthMask(GL_FALSE);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, fbo2->getTexture());
-		glViewport(0, 0, fbo1->getWidth(), fbo1->getHeight());
-		horizontal_blur_program->use();
-		glBindVertexArray(vaos[1]);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
-		glDepthMask(GL_TRUE);
-		fbo1->unbind();
-
-	}break;
+	//Renders Greyscale and blur if its combo mode
+	case RenderMode::COMBO:
 	case RenderMode::GREYSCALE: {
 
+		//Render greyscale filter to fbo1
 		fbo1->bind();
 		glDepthMask(GL_FALSE);
 		glActiveTexture(GL_TEXTURE0);
@@ -278,19 +245,8 @@ void GameManager::render() {
 		fbo1->unbind();
 
 
-	}break;
-	case RenderMode::COMBO: {
-
-		fbo1->bind();
-		glDepthMask(GL_FALSE);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, fbo1->getTexture());
-		glViewport(0, 0, fbo1->getWidth(), fbo1->getHeight());
-		greyscale_program->use();
-		glBindVertexArray(vaos[1]);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
-		glDepthMask(GL_TRUE);
-		fbo1->unbind();
+	}if(filterMode == RenderMode::GREYSCALE) break; //breaks only if in grayscale mode
+	case RenderMode::BLUR: {
 
 		//Generate mipmaps
 		glActiveTexture(GL_TEXTURE0);
@@ -323,11 +279,12 @@ void GameManager::render() {
 		glDepthMask(GL_TRUE);
 		fbo1->unbind();
 
-
 	}break;
 
+	case RenderMode::STANDARD:
+	default:
+	break;
 	}
-
 
 	//Set up rendering to screen
 	glDepthMask(GL_FALSE);
@@ -346,9 +303,7 @@ void GameManager::render() {
 	CHECK_GL_ERRORS();
 	glBindVertexArray(0);
 	CHECK_GL_ERRORS();
-
 }
-
 
 void GameManager::play() {
 	bool doExit = false;
@@ -375,7 +330,7 @@ void GameManager::play() {
 				case SDLK_q: //Ctrl+q
 					if (event.key.keysym.mod & KMOD_CTRL) doExit = true;
 					break;
-				case SDLK_0:
+				case SDLK_0: //Render Standar phong shading
 				{
 					std::cout << "0" << std::endl;
 					if (RenderMode::STANDARD == filterMode) break;
@@ -386,7 +341,7 @@ void GameManager::play() {
 					filterMode = RenderMode::STANDARD;
 				}
 				break;
-				case SDLK_1:
+				case SDLK_1: //Render Blur filtermode
 				{
 					std::cout << "1" << std::endl;
 					if (RenderMode::BLUR == filterMode) break;
@@ -397,7 +352,7 @@ void GameManager::play() {
 					filterMode = RenderMode::BLUR;
 				}
 					break;
-				case SDLK_2:
+				case SDLK_2: //Render Greyscale filtermode
 				{
 					std::cout << "2" << std::endl;
 					if (RenderMode::GREYSCALE == filterMode) break;
@@ -410,7 +365,7 @@ void GameManager::play() {
 					filterMode = RenderMode::GREYSCALE;
 				}
 					break;
-				case SDLK_3:
+				case SDLK_3: //Render Greyscale and Blur
 				{
 					std::cout << "3" << std::endl; 
 					if (RenderMode::COMBO == filterMode) break;
