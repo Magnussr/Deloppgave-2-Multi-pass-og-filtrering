@@ -258,11 +258,23 @@ void GameManager::play() {
 				trackball_view_matrix = trackball.rotate(event.motion.x, event.motion.y);
 				break;
 			case SDL_KEYDOWN:
-				if (event.key.keysym.sym == SDLK_ESCAPE) //Esc
+				switch (event.key.keysym.sym) {
+				case SDLK_ESCAPE: //Esc
 					doExit = true;
-				if (event.key.keysym.sym == SDLK_q
-						&& event.key.keysym.mod & KMOD_CTRL) //Ctrl+q
-					doExit = true;
+					break;
+				case SDLK_q: //Ctrl+q
+					if (event.key.keysym.mod & KMOD_CTRL) doExit = true;
+					break;
+				case SDLK_1:
+					std::cout << "1" << std::endl;
+					break;
+				case SDLK_2:
+					std::cout << "2" << std::endl;
+					break;
+				case SDLK_3:
+					std::cout << "3" << std::endl;
+					break;
+				}
 				break;
 			case SDL_QUIT: //e.g., user clicks the upper right x
 				doExit = true;
