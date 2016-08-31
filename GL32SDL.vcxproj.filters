@@ -76,5 +76,14 @@
     <None Include="shaders\bloom.frag">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="shaders\passthrough.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="shaders\horizontal_blur.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="shaders\vertical_blur.frag">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

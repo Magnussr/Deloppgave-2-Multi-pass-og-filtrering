@@ -90,7 +90,7 @@ void GameManager::setOpenGLStates() {
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_CULL_FACE);
 	CHECK_GL_ERRORS();
-	glClearColor(1.0, 1.0, 1.0, 1.0);
+	glClearColor( .0,  .0, 1.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
@@ -105,8 +105,8 @@ void GameManager::createSimpleProgram() {
 	//Compile shaders, attach to program object, and link
 	phong_program.reset(new Program("shaders/phong_os.vert", "shaders/phong_os.frag"));
 	bloom_program.reset(new Program("shaders/bloom.vert", "shaders/bloom.frag"));
-
-	//FIXME: Create shaders here for blur
+	horizontal_blur_program.reset(new Program("shaders/passthrough.vert","shaders/horizontal_blur.frag"));
+	vertical_blur_program.reset(new Program("shaders/passthrough.vert","shaders/vertical_blur.frag"));
 	CHECK_GL_ERRORS();
 
 	//Set uniforms for the programs
@@ -115,11 +115,18 @@ void GameManager::createSimpleProgram() {
 	phong_program->disuse();
 	CHECK_GL_ERRORS();
 	
-	//FIXME
-	//Set the inputs to the bloom and blur programs here. Remember that they typically require the following:
-	//glUniform1f(horizontal_blur_downscale_program->getUniform("dx"), 1.0/horizontal_blur_downscale->getWidth());
 	bloom_program->use();
 	glUniform1i(bloom_program->getUniform("my_texture"), 0);
+
+	horizontal_blur_program->use();
+	glUniform1i(horizontal_blur_program->getUniform("my_texture"), 0);
+	glUniform1f(horizontal_blur_program->getUniform("dx"), 1.0f / fbo2->getWidth());
+	CHECK_GL_ERRORS();
+
+	vertical_blur_program->use();
+	glUniform1i(vertical_blur_program->getUniform("my_texture"), 1);
+	glUniform1f(vertical_blur_program->getUniform("dy"), 1.0f / fbo2->getHeight());
+	CHECK_GL_ERRORS();
 }
 
 void GameManager::createVAO() {
@@ -153,10 +160,12 @@ void GameManager::createVAO() {
 }
 
 void GameManager::createFBO() {
-	fbo.reset(new TextureFBO(window_width, window_height));
-	fbo->unbind();
+	
+	fbo1.reset(new TextureFBO(window_width, window_height));
+	fbo1->unbind();
 
-	//FIXME: Also create the programs here for blurring
+	fbo2.reset(new TextureFBO(window_width >> downscale_level, window_height >> downscale_level));
+	fbo2->unbind();
 }
 
 void GameManager::init() {
@@ -197,9 +206,9 @@ void GameManager::render() {
 	glm::mat4 view_matrix_new = view_matrix*trackball_view_matrix;
 
 	//Set up rendering to first vbo
-	fbo->bind();
+	fbo1->bind();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glViewport(0, 0, fbo->getWidth(), fbo->getHeight());
+	glViewport(0, 0, fbo1->getWidth(), fbo1->getHeight());
 
 	//Render model to the FBO
 	phong_program->use();
@@ -207,11 +216,15 @@ void GameManager::render() {
 	renderMeshRecursive(model->getMesh(), phong_program, view_matrix_new, model_matrix);
 
 	//Unbind the FBO, and check for errors
-	fbo->unbind();
+	fbo1->unbind();
 	CHECK_GL_ERRORS();
 
-	//FIXME: Generate mipmaps here
-	//Hint: glGenerateMipmap
+	//Generate mipmaps
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, fbo1->getTexture());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
 
 	//FIXME: Downsample and blur
 	//Hint: remember glDepthMask(GL_FALSE); to disable writing to depth buffer
@@ -220,6 +233,33 @@ void GameManager::render() {
 	//glBindVertexArray(vaos[1]);
 	//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
 
+
+	//Downsample and blur vertically
+	fbo2->bind();
+	glDepthMask(GL_FALSE);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, fbo1->getTexture());
+	glViewport(0, 0, fbo2->getWidth(), fbo2->getHeight());
+	vertical_blur_program->use();
+	glBindVertexArray(vaos[1]);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
+	glDepthMask(GL_TRUE);
+	fbo2->unbind();
+
+	//Downsample and blur horizontally
+	fbo1->bind();
+	glDepthMask(GL_FALSE);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, fbo2->getTexture());
+	glViewport(0, 0, fbo1->getWidth(), fbo1->getHeight());
+	horizontal_blur_program->use();
+	glBindVertexArray(vaos[1]);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
+	glDepthMask(GL_TRUE);
+	fbo1->unbind();
+
+
+
 	//Set up rendering to screen
 	glDepthMask(GL_FALSE);
 	glViewport(0, 0, window_width, window_height);
@@ -227,7 +267,7 @@ void GameManager::render() {
 	//Render quad to screen, textured with the result of the blur operation
 	bloom_program->use();
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, fbo->getTexture());
+	glBindTexture(GL_TEXTURE_2D, fbo1->getTexture());
 	glBindVertexArray(vaos[1]);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
 

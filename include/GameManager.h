@@ -98,12 +98,12 @@ private:
 	GLuint vaos[max_vaos]; //< Vertex array object
 	std::shared_ptr<GLUtils::BO<GL_ARRAY_BUFFER> > vertices;
 	std::shared_ptr<GLUtils::BO<GL_ELEMENT_ARRAY_BUFFER> > indices;
-	std::shared_ptr<GLUtils::Program> phong_program, bloom_program, horizontal_blur_downscale_program, vertical_blur_downscale_program;
+	std::shared_ptr<GLUtils::Program> phong_program, bloom_program, horizontal_blur_program, vertical_blur_program;
 
 	std::shared_ptr<Model> model;
-	std::shared_ptr<TextureFBO> fbo;
-	std::shared_ptr<TextureFBO> horizontal_blur_downscale;
-	std::shared_ptr<TextureFBO> vertical_blur_downscale;
+	//Fbos for rendering
+	std::shared_ptr<TextureFBO> fbo1;
+	std::shared_ptr<TextureFBO> fbo2;
 
 	Timer my_timer; //< Timer for machine independent motion
 
