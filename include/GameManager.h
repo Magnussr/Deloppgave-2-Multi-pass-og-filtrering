@@ -15,6 +15,7 @@
 #include "VirtualTrackball.h"
 #include "TextureFBO.h"
 
+enum RenderMode { STANDARD, BLUR, GREYSCALE, COMBO };
 /**
  * This class handles the game logic and display.
  * Uses SDL as the display manager, and glm for 
@@ -121,6 +122,9 @@ private:
 	static GLubyte quad_indices[];
 	static GLfloat quad_vertices[];
 	static unsigned int downscale_level;
+
+	RenderMode filterMode;
+	
 };
 
 #endif // _GAMEMANAGER_H_

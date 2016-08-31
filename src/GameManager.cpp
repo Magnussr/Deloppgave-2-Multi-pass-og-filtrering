@@ -37,6 +37,9 @@ unsigned int GameManager::downscale_level = 4;
 
 GameManager::GameManager() {
 	my_timer.restart();
+	
+	filterMode = RenderMode::STANDARD;
+
 }
 
 GameManager::~GameManager() {
@@ -219,46 +222,63 @@ void GameManager::render() {
 	fbo1->unbind();
 	CHECK_GL_ERRORS();
 
-	//Generate mipmaps
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, fbo1->getTexture());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glGenerateMipmap(GL_TEXTURE_2D);
+	switch (filterMode)
+	{
+	case RenderMode::STANDARD: {
+
+	}
+							   break;
+	case RenderMode::BLUR: {
 
 
-	//FIXME: Downsample and blur
-	//Hint: remember glDepthMask(GL_FALSE); to disable writing to depth buffer
-	//Hint: Remember to set the viewport to cover the full FBO
-	//Hint: Draw a full-screen quad as follows to "render the full screen"
-	//glBindVertexArray(vaos[1]);
-	//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
+		//Generate mipmaps
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, fbo1->getTexture());
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glGenerateMipmap(GL_TEXTURE_2D);
 
 
-	//Downsample and blur vertically
-	fbo2->bind();
-	glDepthMask(GL_FALSE);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, fbo1->getTexture());
-	glViewport(0, 0, fbo2->getWidth(), fbo2->getHeight());
-	vertical_blur_program->use();
-	glBindVertexArray(vaos[1]);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
-	glDepthMask(GL_TRUE);
-	fbo2->unbind();
+		//Downsample and blur vertically
+		fbo2->bind();
+		glDepthMask(GL_FALSE);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, fbo1->getTexture());
+		glViewport(0, 0, fbo2->getWidth(), fbo2->getHeight());
+		vertical_blur_program->use();
+		glBindVertexArray(vaos[1]);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
+		glDepthMask(GL_TRUE);
+		fbo2->unbind();
 
-	//Downsample and blur horizontally
-	fbo1->bind();
-	glDepthMask(GL_FALSE);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, fbo2->getTexture());
-	glViewport(0, 0, fbo1->getWidth(), fbo1->getHeight());
-	horizontal_blur_program->use();
-	glBindVertexArray(vaos[1]);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
-	glDepthMask(GL_TRUE);
-	fbo1->unbind();
+		//Downsample and blur horizontally
+		fbo1->bind();
+		glDepthMask(GL_FALSE);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, fbo2->getTexture());
+		glViewport(0, 0, fbo1->getWidth(), fbo1->getHeight());
+		horizontal_blur_program->use();
+		glBindVertexArray(vaos[1]);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
+		glDepthMask(GL_TRUE);
+		fbo1->unbind();
 
 
+
+
+
+	}
+							   break;
+	case RenderMode::GREYSCALE: {
+
+	}
+							   break;
+	case RenderMode::COMBO: {
+
+	}
+							   break;
+	}
+
+	
 
 	//Set up rendering to screen
 	glDepthMask(GL_FALSE);
@@ -278,7 +298,9 @@ void GameManager::render() {
 
 	glBindVertexArray(0);
 	CHECK_GL_ERRORS();
+
 }
+
 
 void GameManager::play() {
 	bool doExit = false;
@@ -305,14 +327,48 @@ void GameManager::play() {
 				case SDLK_q: //Ctrl+q
 					if (event.key.keysym.mod & KMOD_CTRL) doExit = true;
 					break;
+				case SDLK_0:
+				{
+					std::cout << "0" << std::endl;
+					if (RenderMode::STANDARD == filterMode) break;
+					
+					fbo2.reset(new TextureFBO(window_width, window_height));
+					fbo2->unbind();
+				
+					filterMode = RenderMode::STANDARD;
+				}
+				break;
 				case SDLK_1:
+				{
 					std::cout << "1" << std::endl;
+					if (RenderMode::BLUR == filterMode) break;
+				
+
+					fbo2.reset(new TextureFBO(window_width >> downscale_level, window_height >> downscale_level));
+					fbo2->unbind();
+				
+					filterMode = RenderMode::BLUR;
+				}
 					break;
 				case SDLK_2:
+				{
 					std::cout << "2" << std::endl;
+					if (RenderMode::GREYSCALE == filterMode) break;
+
+
+
+					filterMode = RenderMode::GREYSCALE;
+				}
 					break;
 				case SDLK_3:
-					std::cout << "3" << std::endl;
+				{
+					std::cout << "3" << std::endl; 
+					if (RenderMode::COMBO == filterMode) break;
+
+
+
+					filterMode = RenderMode::COMBO;
+				}
 					break;
 				}
 				break;
