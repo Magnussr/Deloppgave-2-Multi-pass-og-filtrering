@@ -82,5 +82,8 @@
     <None Include="shaders\passthrough.frag">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="shaders\greyscale.frag">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

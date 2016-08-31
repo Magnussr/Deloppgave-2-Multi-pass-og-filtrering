@@ -29,6 +29,7 @@
     <ClCompile Include="src\VirtualTrackball.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\greyscale.frag" />
     <None Include="shaders\passthrough.frag" />
     <None Include="shaders\horizontal_blur.frag" />
     <None Include="shaders\passthrough.vert" />

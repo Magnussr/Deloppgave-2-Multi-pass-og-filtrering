@@ -110,6 +110,7 @@ void GameManager::createSimpleProgram() {
 	passthrough_program.reset(new Program("shaders/passthrough.vert", "shaders/passthrough.frag"));
 	horizontal_blur_program.reset(new Program("shaders/passthrough.vert","shaders/horizontal_blur.frag"));
 	vertical_blur_program.reset(new Program("shaders/passthrough.vert","shaders/vertical_blur.frag"));
+	greyscale_program.reset(new Program("shaders/passthrough.vert","shaders/greyscale.frag"));
 	CHECK_GL_ERRORS();
 
 	//Set uniforms for the programs
@@ -211,7 +212,7 @@ void GameManager::render() {
 	//Set up rendering to first vbo
 	fbo1->bind();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glViewport(0, 0, fbo1->getWidth(), fbo1->getHeight());
+	glViewport(0, 0, window_width, window_height);
 
 	//Render model to the FBO
 	phong_program->use();
@@ -238,7 +239,7 @@ void GameManager::render() {
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 
-		//Downsample and blur vertically
+		//blur vertically
 		fbo2->bind();
 		glDepthMask(GL_FALSE);
 		glActiveTexture(GL_TEXTURE1);
@@ -250,7 +251,67 @@ void GameManager::render() {
 		glDepthMask(GL_TRUE);
 		fbo2->unbind();
 
-		//Downsample and blur horizontally
+		//blur horizontally
+		fbo1->bind();
+		glDepthMask(GL_FALSE);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, fbo2->getTexture());
+		glViewport(0, 0, fbo1->getWidth(), fbo1->getHeight());
+		horizontal_blur_program->use();
+		glBindVertexArray(vaos[1]);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
+		glDepthMask(GL_TRUE);
+		fbo1->unbind();
+
+	}break;
+	case RenderMode::GREYSCALE: {
+
+		fbo1->bind();
+		glDepthMask(GL_FALSE);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, fbo1->getTexture());
+		glViewport(0, 0, fbo1->getWidth(), fbo1->getHeight());
+		greyscale_program->use();
+		glBindVertexArray(vaos[1]);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
+		glDepthMask(GL_TRUE);
+		fbo1->unbind();
+
+
+	}break;
+	case RenderMode::COMBO: {
+
+		fbo1->bind();
+		glDepthMask(GL_FALSE);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, fbo1->getTexture());
+		glViewport(0, 0, fbo1->getWidth(), fbo1->getHeight());
+		greyscale_program->use();
+		glBindVertexArray(vaos[1]);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
+		glDepthMask(GL_TRUE);
+		fbo1->unbind();
+
+		//Generate mipmaps
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, fbo1->getTexture());
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+
+		//blur vertically
+		fbo2->bind();
+		glDepthMask(GL_FALSE);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, fbo1->getTexture());
+		glViewport(0, 0, fbo2->getWidth(), fbo2->getHeight());
+		vertical_blur_program->use();
+		glBindVertexArray(vaos[1]);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
+		glDepthMask(GL_TRUE);
+		fbo2->unbind();
+
+		//blur horizontally
 		fbo1->bind();
 		glDepthMask(GL_FALSE);
 		glActiveTexture(GL_TEXTURE0);
@@ -263,22 +324,10 @@ void GameManager::render() {
 		fbo1->unbind();
 
 
-
-
-
-	}
-							   break;
-	case RenderMode::GREYSCALE: {
+	}break;
 
 	}
-							   break;
-	case RenderMode::COMBO: {
 
-	}
-							   break;
-	}
-
-	
 
 	//Set up rendering to screen
 	glDepthMask(GL_FALSE);
@@ -295,7 +344,6 @@ void GameManager::render() {
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glDepthMask(GL_TRUE);
 	CHECK_GL_ERRORS();
-
 	glBindVertexArray(0);
 	CHECK_GL_ERRORS();
 
@@ -343,7 +391,6 @@ void GameManager::play() {
 					std::cout << "1" << std::endl;
 					if (RenderMode::BLUR == filterMode) break;
 				
-
 					fbo2.reset(new TextureFBO(window_width >> downscale_level, window_height >> downscale_level));
 					fbo2->unbind();
 				
@@ -356,6 +403,9 @@ void GameManager::play() {
 					if (RenderMode::GREYSCALE == filterMode) break;
 
 
+					fbo2.reset(new TextureFBO(window_width, window_height));
+					fbo2->unbind();
+
 
 					filterMode = RenderMode::GREYSCALE;
 				}
@@ -365,7 +415,8 @@ void GameManager::play() {
 					std::cout << "3" << std::endl; 
 					if (RenderMode::COMBO == filterMode) break;
 
-
+					fbo2.reset(new TextureFBO(window_width >> downscale_level, window_height >> downscale_level));
+					fbo2->unbind();
 
 					filterMode = RenderMode::COMBO;
 				}
